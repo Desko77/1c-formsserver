@@ -1,0 +1,12 @@
+services:
+  mcp-forms-server:
+    build: .
+    container_name: mcp-forms-server-dev
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./databases:/databases
+    environment:
+      - PORT=8011
+      - TRANSPORT=sse
+    restart: unless-stopped

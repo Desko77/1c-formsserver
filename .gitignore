@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+
+# Environment
+.env
+.venv/
+venv/
+
+# Runtime data
+databases/
+model_cache/
+
+# IDE / Tools
+.idea/
+.vscode/
+.claude/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker
+.docker/
+
+# Reference files from original container
+reference/comol/

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ManagedForm xmlns="http://v8.1c.ru/8.3/xcf/managed"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             xmlns:xr="http://v8.1c.ru/8.3/xcf/readable">
+    <AutoTitle>true</AutoTitle>
+    <Title>Простая форма</Title>
+    <Attributes>
+        <Attribute>
+            <Name>Объект</Name>
+            <Id>0</Id>
+            <ValueType>
+                <Type>CatalogObject.Контрагенты</Type>
+            </ValueType>
+        </Attribute>
+    </Attributes>
+    <Elements>
+        <InputField>
+            <Name>Наименование</Name>
+            <Id>1</Id>
+            <DataPath>Объект.Наименование</DataPath>
+        </InputField>
+    </Elements>
+</ManagedForm>

@@ -1,0 +1,11 @@
+# Core
+fastmcp>=2.0
+lxml>=5.0
+pydantic>=2.0
+python-dotenv>=1.0
+uvicorn>=0.30
+
+# Search (optional, install with: pip install -e ".[search]")
+# chromadb>=0.5
+# sentence-transformers>=3.0
+# numpy>=1.26

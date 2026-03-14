@@ -1,0 +1,496 @@
+{
+  "version": "1.0",
+  "generated": "2025-09-10T00:14:39.114730",
+  "description": "1C Forms XML Schema extracted from configuration analysis",
+  "form_structure": {
+    "root": "Form",
+    "required_sections": [
+      "ChildItems"
+    ],
+    "optional_sections": [
+      "Commands",
+      "Parameters",
+      "Attributes",
+      "CommandInterface"
+    ],
+    "events": [
+      "ПриСозданииНаСервере",
+      "ПриОткрытии",
+      "ПриЗакрытии",
+      "ПередЗаписью",
+      "ПослеЗаписи",
+      "ПриЧтенииНаСервере",
+      "ПриЗаписиНаСервере",
+      "ОбработкаВыбора",
+      "ОбработкаОповещения"
+    ]
+  },
+  "elements": {
+    "form:FormGroup": {
+      "description": "Группа элементов формы",
+      "can_contain": [
+        "any_form_element"
+      ],
+      "properties": {
+        "name": "string",
+        "title": "LocalString",
+        "group": "string",
+        "groupType": "enum:Vertical|Horizontal|Pages|Usual|CommandBar",
+        "representation": "enum:None|StrongSeparation|WeakSeparation|NormalSeparation",
+        "showTitle": "boolean",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number"
+      }
+    },
+    "form:Button": {
+      "description": "Кнопка команды",
+      "properties": {
+        "name": "string",
+        "title": "LocalString",
+        "commandName": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "shortcut": "string",
+        "picture": "Picture",
+        "representation": "enum:Auto|Text|Picture|PictureAndText",
+        "displayImportance": "enum:Auto|High|Normal|Low"
+      }
+    },
+    "form:InputField": {
+      "description": "Поле ввода данных",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "title": "LocalString",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "readOnly": "boolean",
+        "width": "number",
+        "height": "number",
+        "multiLine": "boolean",
+        "choiceButton": "boolean",
+        "clearButton": "boolean",
+        "passwordMode": "boolean",
+        "mask": "string",
+        "autoMaxWidth": "boolean",
+        "autoMaxHeight": "boolean",
+        "displayImportance": "enum:Auto|High|Normal|Low"
+      }
+    },
+    "form:Table": {
+      "description": "Таблица данных",
+      "can_contain": [
+        "form:ChildItems"
+      ],
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "title": "LocalString",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "autoInsertNewRow": "boolean",
+        "enableStartDrag": "boolean",
+        "enableDrag": "boolean",
+        "changeRowSet": "boolean",
+        "changeRowOrder": "boolean",
+        "header": "boolean",
+        "footer": "boolean",
+        "horizontalScrollBar": "enum:Auto|AlwaysUse|NeverUse",
+        "verticalScrollBar": "enum:Auto|AlwaysUse|NeverUse",
+        "displayImportance": "enum:Auto|High|Normal|Low"
+      }
+    },
+    "form:LabelField": {
+      "description": "Поле надписи (статический текст)",
+      "properties": {
+        "name": "string",
+        "title": "LocalString",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "hyperlink": "boolean",
+        "horizontalAlign": "enum:Left|Center|Right|Justify",
+        "verticalAlign": "enum:Top|Middle|Bottom",
+        "font": "Font",
+        "textColor": "Color",
+        "border": "Border"
+      }
+    },
+    "form:CheckBoxField": {
+      "description": "Флажок",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "title": "LocalString",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "checkBoxType": "enum:Auto|CheckBox|Switch|Tumbler",
+        "threeState": "boolean",
+        "displayImportance": "enum:Auto|High|Normal|Low"
+      }
+    },
+    "form:RadioButtonField": {
+      "description": "Переключатель (радиокнопка)",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "title": "LocalString",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "radioButtonType": "enum:Auto|RadioButton|Tumbler",
+        "itemsSource": "enum:Items|FromData",
+        "columnsCount": "number",
+        "displayImportance": "enum:Auto|High|Normal|Low"
+      }
+    },
+    "form:SpreadsheetDocumentField": {
+      "description": "Поле табличного документа",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "showGroups": "boolean",
+        "showGrid": "boolean",
+        "showHeaders": "boolean",
+        "edit": "boolean",
+        "protection": "boolean"
+      }
+    },
+    "form:HTMLDocumentField": {
+      "description": "Поле HTML-документа",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "displayImportance": "enum:Auto|High|Normal|Low"
+      }
+    },
+    "form:PictureField": {
+      "description": "Поле картинки",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "hyperlink": "boolean",
+        "pictureSize": "enum:RealSize|Stretch|Proportionally|Tile|AutoSize",
+        "border": "Border"
+      }
+    },
+    "form:CalendarField": {
+      "description": "Поле календаря",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "showCurrentDate": "boolean",
+        "beginOfRepresentationPeriod": "date",
+        "endOfRepresentationPeriod": "date"
+      }
+    },
+    "form:PeriodField": {
+      "description": "Поле периода",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number"
+      }
+    },
+    "form:ProgressBarField": {
+      "description": "Индикатор прогресса",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "minValue": "number",
+        "maxValue": "number",
+        "showPercent": "boolean",
+        "orientation": "enum:Horizontal|Vertical"
+      }
+    },
+    "form:TrackBarField": {
+      "description": "Регулятор (ползунок)",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "minValue": "number",
+        "maxValue": "number",
+        "step": "number",
+        "largeStep": "number",
+        "orientation": "enum:Horizontal|Vertical",
+        "markingAppearance": "enum:None|LargeMarking|SmallMarking",
+        "showScaleLabels": "boolean"
+      }
+    },
+    "form:ChartField": {
+      "description": "Диаграмма",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number"
+      }
+    },
+    "form:GanttChartField": {
+      "description": "Диаграмма Ганта",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number"
+      }
+    },
+    "form:DendrogramField": {
+      "description": "Дендрограмма",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number"
+      }
+    },
+    "form:GraphicalSchemaField": {
+      "description": "Графическая схема",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number",
+        "edit": "boolean"
+      }
+    },
+    "form:FlowchartField": {
+      "description": "Блок-схема",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number"
+      }
+    },
+    "form:GeographicalSchemaField": {
+      "description": "Географическая схема",
+      "properties": {
+        "name": "string",
+        "dataPath": "string",
+        "visible": "boolean",
+        "enabled": "boolean",
+        "width": "number",
+        "height": "number"
+      }
+    },
+    "form:SearchControlAddition": {
+      "description": "Дополнение управления поиском",
+      "properties": {
+        "name": "string",
+        "visible": "boolean",
+        "source": "string"
+      }
+    },
+    "form:ViewStatusAddition": {
+      "description": "Дополнение состояния просмотра",
+      "properties": {
+        "name": "string",
+        "visible": "boolean",
+        "source": "string"
+      }
+    },
+    "form:SearchStringAddition": {
+      "description": "Дополнение строки поиска",
+      "properties": {
+        "name": "string",
+        "visible": "boolean",
+        "source": "string"
+      }
+    },
+    "form:UsualGroup": {
+      "description": "Обычная группа",
+      "can_contain": [
+        "any_form_element"
+      ],
+      "extends": "form:FormGroup"
+    },
+    "form:CommandBarGroup": {
+      "description": "Командная панель",
+      "can_contain": [
+        "form:Button"
+      ],
+      "extends": "form:FormGroup"
+    },
+    "form:PagesGroup": {
+      "description": "Страницы",
+      "can_contain": [
+        "form:FormGroup"
+      ],
+      "extends": "form:FormGroup"
+    }
+  },
+  "data_types": {
+    "LocalString": {
+      "description": "Локализованная строка",
+      "structure": {
+        "item": [
+          {
+            "lang": "language_code",
+            "content": "text"
+          }
+        ]
+      }
+    },
+    "Color": {
+      "description": "Цвет",
+      "values": [
+        "Auto",
+        "StyleItem",
+        "WebColor",
+        "WindowsColor",
+        "#RRGGBB"
+      ]
+    },
+    "Font": {
+      "description": "Шрифт",
+      "structure": {
+        "faceName": "string",
+        "height": "number",
+        "bold": "boolean",
+        "italic": "boolean",
+        "underline": "boolean",
+        "strikeout": "boolean"
+      }
+    },
+    "Border": {
+      "description": "Граница",
+      "structure": {
+        "style": "enum:None|Single|Double|Dotted|Dashed|Solid",
+        "width": "number"
+      }
+    },
+    "Picture": {
+      "description": "Картинка",
+      "structure": {
+        "url": "string",
+        "ref": "string",
+        "transparent": "boolean"
+      }
+    }
+  },
+  "namespaces": {
+    "form": "http://v8.1c.ru/8.3/xcf/logform",
+    "xs": "http://www.w3.org/2001/XMLSchema",
+    "xsi": "http://www.w3.org/2001/XMLSchema-instance"
+  },
+  "common_attributes": {
+    "id": "Unique identifier for XML processing",
+    "name": "Element name",
+    "title": "Display title (LocalString)",
+    "visible": "Visibility flag",
+    "enabled": "Enabled state",
+    "contextMenu": "Context menu settings",
+    "extendedTooltip": "Extended tooltip settings",
+    "userVisible": "User visibility settings"
+  },
+  "usage_patterns": {
+    "basic_form": {
+      "description": "Basic form structure",
+      "template": {
+        "Form": {
+          "ChildItems": [
+            {
+              "type": "form:FormGroup",
+              "name": "ГруппаОсновная",
+              "properties": {
+                "groupType": "Vertical"
+              },
+              "children": []
+            }
+          ]
+        }
+      }
+    },
+    "list_form": {
+      "description": "List form with table",
+      "template": {
+        "Form": {
+          "ChildItems": [
+            {
+              "type": "form:Table",
+              "name": "Список",
+              "dataPath": "Список"
+            }
+          ]
+        }
+      }
+    },
+    "item_form": {
+      "description": "Item edit form",
+      "template": {
+        "Form": {
+          "ChildItems": [
+            {
+              "type": "form:FormGroup",
+              "name": "ГруппаОсновная",
+              "children": [
+                {
+                  "type": "form:InputField"
+                },
+                {
+                  "type": "form:InputField"
+                }
+              ]
+            },
+            {
+              "type": "form:FormGroup",
+              "name": "КоманднаяПанель",
+              "groupType": "CommandBar",
+              "children": [
+                {
+                  "type": "form:Button",
+                  "commandName": "Записать"
+                },
+                {
+                  "type": "form:Button",
+                  "commandName": "ЗаписатьИЗакрыть"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

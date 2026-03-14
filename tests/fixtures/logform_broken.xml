@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Form xmlns="http://v8.1c.ru/8.3/xcf/logform" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <AutoCommandBar name="" id="-1"/>
+    <ChildItems>
+        <InputField name="Поле1" id="1">
+            <DataPath>Поле1</DataPath>
+        </InputField>
+        <InputField name="Поле2" id="1">
+            <DataPath>НесуществующийРеквизит</DataPath>
+            <ContextMenu name="Поле2Меню" id="3"/>
+            <ExtendedTooltip name="Поле2Подсказка" id="4"/>
+        </InputField>
+    </ChildItems>
+    <Attributes>
+        <Attribute name="Поле1" id="1">
+            <Type>
+                <v8:Type>xs:string</v8:Type>
+            </Type>
+        </Attribute>
+        <Attribute name="Поле1" id="2">
+            <Type>
+                <v8:Type>xs:decimal</v8:Type>
+            </Type>
+        </Attribute>
+    </Attributes>
+</Form>
