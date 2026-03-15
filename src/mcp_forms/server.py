@@ -302,9 +302,19 @@ def get_server_info() -> dict:
     """Информация о сервере и доступных инструментах."""
     from mcp_forms import __version__
 
+    tools = []
+    try:
+        tools = [t.name for t in mcp._tool_manager._tools.values()]
+    except AttributeError:
+        try:
+            tools = [t.name for t in mcp.get_tools()]
+        except Exception:
+            tools = ["(unable to list)"]
+
     return {
         "name": "mcp-forms-server",
         "version": __version__,
         "supported_formats": ["logform", "managed"],
-        "tools": [t.name for t in mcp._tool_manager._tools.values()],
+        "tools": tools,
+        "tools_count": len(tools),
     }

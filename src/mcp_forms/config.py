@@ -18,7 +18,7 @@ EDT_REFERENCE_PATH = Path(os.getenv("EDT_REFERENCE_PATH", PROJECT_ROOT / "edt_re
 # Сервер
 PORT = int(os.getenv("PORT", "8011"))
 HEALTH_PORT = int(os.getenv("HEALTH_PORT", str(PORT + 1)))
-TRANSPORT = os.getenv("TRANSPORT", "sse")
+TRANSPORT = os.getenv("TRANSPORT", "streamable-http")
 
 # Файлы данных
 FORM_SCHEMA_JSON = DATA_PATH / "form_schema.json"

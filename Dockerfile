@@ -19,7 +19,7 @@ COPY edt_reference/ edt_reference/
 RUN mkdir -p /databases
 
 ENV PORT=8011
-ENV TRANSPORT=sse
+ENV TRANSPORT=streamable-http
 ENV DATABASES_PATH=/databases
 ENV DATA_PATH=/app/data
 ENV EDT_REFERENCE_PATH=/app/edt_reference
