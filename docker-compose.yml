@@ -1,7 +1,7 @@
 services:
   mcp-forms-server:
     build: .
-    container_name: mcp-forms-server-dev
+    container_name: 1c-mcp-forms-server
     ports:
       - "8011:8011"
     volumes:
@@ -9,4 +9,9 @@ services:
     environment:
       - PORT=8011
       - TRANSPORT=sse
+      - EDT_ENABLED=${EDT_ENABLED:-false}
+      - EDT_MCP_URL=${EDT_MCP_URL:-http://host.docker.internal:9999/sse}
+      - EDT_TIMEOUT=${EDT_TIMEOUT:-10}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
