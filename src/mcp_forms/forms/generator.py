@@ -102,7 +102,10 @@ class FormGenerator:
         self._next_element_id = 1
         self._next_attribute_id = 0
 
-        if spec.format == "managed":
+        # "edt" — алиас для "logform" (EDT использует logform-формат)
+        fmt = "logform" if spec.format == "edt" else spec.format
+
+        if fmt == "managed":
             return self._generate_managed(spec)
         return self._generate_logform(spec)
 

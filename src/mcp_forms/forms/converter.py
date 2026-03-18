@@ -105,6 +105,10 @@ class FormConverter:
         Raises:
             ValueError: если формат не поддерживается или совпадает с исходным
         """
+        # "edt" — алиас для "logform" (EDT использует logform-формат)
+        if target_format == "edt":
+            target_format = "logform"
+
         if target_format not in ("logform", "managed"):
             raise ValueError(f"Неизвестный целевой формат: {target_format}")
 

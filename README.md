@@ -32,7 +32,7 @@ MCP-сервер для генерации, валидации, конверта
 docker compose up -d
 ```
 
-Сервер доступен на `http://localhost:8011/sse`.
+Сервер доступен на `http://localhost:8011/mcp`.
 
 ### Локально
 
@@ -47,7 +47,7 @@ python -m mcp_forms
 {
   "mcpServers": {
     "1c-forms": {
-      "url": "http://localhost:8011/sse"
+      "url": "http://localhost:8011/mcp"
     }
   }
 }
@@ -72,7 +72,7 @@ python -m mcp_forms
 | Переменная | По умолчанию | Описание |
 |-----------|-------------|----------|
 | `PORT` | `8011` | Порт сервера |
-| `TRANSPORT` | `sse` | Транспорт MCP (sse, streamable-http) |
+| `TRANSPORT` | `streamable-http` | Транспорт MCP (streamable-http, sse) |
 | `DATABASES_PATH` | `./databases` | Путь к базам данных |
 | `DATA_PATH` | `./data` | Путь к данным (схемы, промпт) |
 | `EDT_ENABLED` | `false` | Включить интеграцию с EDT MCP |
