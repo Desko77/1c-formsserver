@@ -222,18 +222,40 @@ def _validate_edt(doc: FormDocument, result: ValidationResult) -> None:
     ns_xsi = "http://www.w3.org/2001/XMLSchema-instance"
     xsi_type_attr = "{%s}type" % ns_xsi
 
-    # Collect all ids recursively (items + attributes)
-    all_ids: dict[str, list[str]] = {}
-    _collect_edt_ids(root, ns, xsi_type_attr, all_ids)
+    # Collect ids separately by scope (items, attributes, formCommands)
+    item_ids: dict[str, list[str]] = {}
+    attr_ids: dict[str, list[str]] = {}
+    cmd_ids: dict[str, list[str]] = {}
 
-    for id_val, names in all_ids.items():
-        if id_val == "-1":
-            continue
-        if len(names) > 1:
-            result.add_error(
-                "Дублирующийся id=%s: %s" % (id_val, ", ".join(names)),
-                element="id=" + id_val,
-            )
+    # Items (elements) — recursive
+    for item in _findall_edt(root, "items", ns):
+        _collect_edt_ids(item, ns, xsi_type_attr, item_ids)
+
+    # Attributes — flat
+    for attr in _findall_edt(root, "attributes", ns):
+        id_el = _find_edt_child(attr, "id", ns)
+        name_el = _find_edt_child(attr, "name", ns)
+        if id_el is not None and id_el.text:
+            name = name_el.text if name_el is not None else "?"
+            attr_ids.setdefault(id_el.text, []).append(name)
+
+    # FormCommands — flat
+    for cmd in _findall_edt(root, "formCommands", ns):
+        id_el = _find_edt_child(cmd, "id", ns)
+        name_el = _find_edt_child(cmd, "name", ns)
+        if id_el is not None and id_el.text:
+            name = name_el.text if name_el is not None else "?"
+            cmd_ids.setdefault(id_el.text, []).append(name)
+
+    for scope_name, ids in [("элементов", item_ids), ("атрибутов", attr_ids), ("команд", cmd_ids)]:
+        for id_val, names in ids.items():
+            if id_val == "-1":
+                continue
+            if len(names) > 1:
+                result.add_error(
+                    "Дублирующийся id=%s у %s: %s" % (id_val, scope_name, ", ".join(names)),
+                    element="id=" + id_val,
+                )
 
     # Validate items have xsi:type
     for item in _iter_edt(root, "items", ns):
