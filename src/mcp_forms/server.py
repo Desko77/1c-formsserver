@@ -21,7 +21,7 @@ mcp = FastMCP(
     "mcp-forms-server",
     instructions=(
         "Сервер для работы с управляемыми формами 1С (Form.xml). "
-        "Два формата: logform (Конфигуратор, по умолчанию) и managed (EDT).\n\n"
+        "Три формата: logform (Конфигуратор), managed (упрощённый), edt (EDT form:Form).\n\n"
         "Типовой workflow генерации формы:\n"
         "1. get_form_prompt — загрузить базу знаний по Form.xml (обязательно перед генерацией)\n"
         "2. search_form_examples — найти похожий пример как образец\n"
@@ -117,7 +117,7 @@ def generate_form(spec: dict) -> dict:
     Перед вызовом загрузи базу знаний через get_form_prompt.
 
     Структура spec:
-    - format: "logform"/"edt" (по умолчанию) или "managed"
+    - format: "logform" (по умолчанию), "managed" или "edt"
     - attributes: [{name, type_name, is_main, save_data}] — реквизиты формы
     - elements: [{name, data_path, field_type}] — поля ввода
       - Группа: {name, group_type, direction, children: [...]}
@@ -157,7 +157,7 @@ def generate_form_template(
         template: имя шаблона (catalog_element, document, data_processor)
         object_name: имя объекта 1С (Номенклатура, ПоступлениеТоваров...)
         fields: реквизиты шапки (["Организация", "Контрагент", "Сумма"])
-        format: "logform"/"edt" (по умолчанию) или "managed". EDT и Конфигуратор используют logform
+        format: "logform" (по умолчанию), "managed" или "edt". 
         table_name: имя табличной части (для шаблона document)
         table_columns: колонки табличной части (["Номенклатура", "Количество", "Цена"])
     """
@@ -183,7 +183,8 @@ def convert_form(xml_content: str, target_format: str) -> dict:
     Args:
         xml_content: содержимое Form.xml целиком
         target_format: целевой формат:
-            - "logform" или "edt" — формат EDT и Конфигуратора (<Form>)
+            - "logform" — формат Конфигуратора (<Form xmlns="...xcf/logform">)
+            - "edt" — формат EDT (<form:Form xmlns:form="...dt/form">)
             - "managed" — упрощённый формат (<ManagedForm>), НЕ для EDT
     """
     return _convert_form(xml_content, target_format)
@@ -312,7 +313,7 @@ def generate_form_from_metadata(
         object_type: тип объекта (Catalog, Document, DataProcessor)
         object_name: имя объекта (Номенклатура, ПоступлениеТоваров...)
         form_type: тип формы ("ФормаЭлемента", "ФормаДокумента", "ФормаСписка")
-        format: "logform"/"edt" (по умолчанию) или "managed". EDT и Конфигуратор используют logform
+        format: "logform" (по умолчанию), "managed" или "edt". 
         include_table_parts: включать табличные части в форму (по умолчанию true)
     """
     return _gen_spec_from_metadata(object_type, object_name, form_type, format, include_table_parts)
@@ -338,7 +339,7 @@ def get_server_info() -> dict:
     return {
         "name": "mcp-forms-server",
         "version": __version__,
-        "supported_formats": ["logform", "managed"],
+        "supported_formats": ["logform", "managed", "edt"],
         "tools": tools,
         "tools_count": len(tools),
     }

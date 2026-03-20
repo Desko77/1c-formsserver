@@ -2,7 +2,7 @@
 
 MCP-сервер для генерации, валидации, конвертации и поиска управляемых форм 1С (Form.xml).
 
-Поддерживает оба формата: **EDT** (`xcf/managed`) и **Конфигуратор** (`xcf/logform`).
+Поддерживает три формата: **Конфигуратор** (`xcf/logform`), **Managed** (`xcf/managed`) и **EDT** (`form:Form`).
 
 ## Возможности
 
@@ -55,15 +55,17 @@ python -m mcp_forms
 
 ## Форматы Form.xml
 
-| | Конфигуратор (logform) | EDT (managed) |
-|---|---|---|
-| Root | `<Form>` | `<ManagedForm>` |
-| Namespace | `xcf/logform` | `xcf/managed` |
-| Namespaces | 17 | 4 |
-| Идентификация | `name`/`id` атрибуты | `<Name>`/`<Id>` элементы |
-| Companion-элементы | ContextMenu + ExtendedTooltip | нет |
+| | Конфигуратор (logform) | Managed | EDT (edt) |
+|---|---|---|---|
+| Файл | `Form.xml` | `Form.xml` | `Form.form` |
+| Root | `<Form>` | `<ManagedForm>` | `<form:Form>` |
+| Namespace | `xcf/logform` | `xcf/managed` | `g5.1c.ru/v8/dt/form` |
+| Элементы | `<InputField name="X">` | `<InputField><Name>X` | `<items xsi:type="form:FormField"><name>X` |
+| DataPath | `<DataPath>Объект.Поле` | `<DataPath>Объект.Поле` | `<dataPath><segments>Объект.Поле` |
+| Companion | ContextMenu + ExtendedTooltip | нет | contextMenu + extendedTooltip |
+| ExtInfo | нет | нет | `<extInfo xsi:type="form:InputFieldExtInfo">` |
 
-Формат определяется автоматически. Конвертация сохраняет семантику при roundtrip.
+Формат определяется автоматически. Конвертация между всеми тремя форматами с сохранением семантики.
 
 ## Конфигурация
 
@@ -111,7 +113,7 @@ pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
-70 тестов: валидация, конвертация (roundtrip), поиск, EDT интеграция.
+91 тестов: валидация, конвертация (roundtrip), генерация, поиск, EDT интеграция.
 
 ## Лицензия
 

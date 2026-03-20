@@ -5,9 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from lxml import etree
 
-# Namespace URI для двух форматов
+# Namespace URI для трёх форматов
 NS_LOGFORM = "http://v8.1c.ru/8.3/xcf/logform"
 NS_MANAGED = "http://v8.1c.ru/8.3/xcf/managed"
+NS_EDT = "http://g5.1c.ru/v8/dt/form"
+NS_CORE = "http://g5.1c.ru/v8/dt/mcore"
 
 # Все namespace'ы формата logform (конфигуратор)
 LOGFORM_NAMESPACES = {
@@ -37,6 +39,12 @@ MANAGED_NAMESPACES = {
     "xr": "http://v8.1c.ru/8.3/xcf/readable",
 }
 
+EDT_NAMESPACES = {
+    "form": NS_EDT,
+    "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+    "core": NS_CORE,
+}
+
 
 @dataclass
 class FormDocument:
@@ -44,13 +52,17 @@ class FormDocument:
 
     tree: etree._ElementTree
     root: etree._Element
-    format: str  # "logform" или "managed"
+    format: str  # "logform", "managed" или "edt"
     version: str = ""  # атрибут version из root
     encoding: str = "UTF-8"
 
     @property
     def namespace(self) -> str:
-        return NS_LOGFORM if self.format == "logform" else NS_MANAGED
+        if self.format == "logform":
+            return NS_LOGFORM
+        if self.format == "edt":
+            return NS_EDT
+        return NS_MANAGED
 
     def ns_tag(self, local_name: str) -> str:
         """Возвращает полное имя тега с namespace: {ns}localname."""
@@ -69,7 +81,7 @@ class FormDocument:
 def detect_format(xml_content: str | bytes) -> str:
     """Определяет формат Form.xml по root element и namespace.
 
-    Returns: "logform", "managed" или "unknown"
+    Returns: "logform", "managed", "edt" или "unknown"
     """
     if isinstance(xml_content, str):
         xml_content = xml_content.encode("utf-8")
@@ -84,12 +96,24 @@ def detect_format(xml_content: str | bytes) -> str:
         return "unknown"
 
     tag = root.tag
+
+    # EDT: <form:Form xmlns:form="http://g5.1c.ru/v8/dt/form">
+    if tag == "{%s}Form" % NS_EDT:
+        return "edt"
+
+    # Logform: <Form xmlns="http://v8.1c.ru/8.3/xcf/logform">
     if tag == "{%s}Form" % NS_LOGFORM or tag == "Form":
         return "logform"
+
+    # Managed: <ManagedForm xmlns="http://v8.1c.ru/8.3/xcf/managed">
     if tag == "{%s}ManagedForm" % NS_MANAGED or tag == "ManagedForm":
         return "managed"
 
-    # Fallback: проверяем namespace
+    # Fallback: проверяем namespace в nsmap
+    all_ns = set(root.nsmap.values())
+    if NS_EDT in all_ns:
+        return "edt"
+
     ns = root.nsmap.get(None, "")
     if NS_LOGFORM in ns:
         return "logform"

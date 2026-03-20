@@ -1,6 +1,6 @@
 """Генератор Form.xml для управляемых форм 1С.
 
-Поддерживает форматы logform (конфигуратор) и managed (EDT).
+Поддерживает форматы logform (конфигуратор), managed (упрощённый) и edt (EDT form:Form).
 """
 
 from __future__ import annotations
@@ -8,7 +8,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from lxml import etree
 
-from mcp_forms.forms.loader import LOGFORM_NAMESPACES, MANAGED_NAMESPACES, NS_LOGFORM, NS_MANAGED
+from mcp_forms.forms.loader import (
+    EDT_NAMESPACES,
+    LOGFORM_NAMESPACES,
+    MANAGED_NAMESPACES,
+    NS_CORE,
+    NS_EDT,
+    NS_LOGFORM,
+    NS_MANAGED,
+)
 
 # Версия формата
 LOGFORM_VERSION = "2.16"
@@ -76,7 +84,7 @@ class FormSpec:
     title: str = ""
     attributes: list[FormAttributeSpec] = field(default_factory=list)
     elements: list[FormFieldSpec | FormGroupSpec | FormTableSpec] = field(default_factory=list)
-    format: str = "logform"  # logform | managed
+    format: str = "logform"  # logform | managed | edt
 
 
 class FormGenerator:
@@ -102,11 +110,11 @@ class FormGenerator:
         self._next_element_id = 1
         self._next_attribute_id = 0
 
-        # "edt" — алиас для "logform" (EDT использует logform-формат)
-        fmt = "logform" if spec.format == "edt" else spec.format
-
+        fmt = spec.format
         if fmt == "managed":
             return self._generate_managed(spec)
+        if fmt == "edt":
+            return self._generate_edt(spec)
         return self._generate_logform(spec)
 
     # =================== Logform ===================
@@ -314,6 +322,274 @@ class FormGenerator:
             if spec.data_path:
                 dp = etree.SubElement(field_el, "DataPath")
                 dp.text = spec.data_path
+
+
+    # =================== EDT (form:Form) ===================
+
+    def _generate_edt(self, spec: FormSpec) -> str:
+        ns_xsi = "http://www.w3.org/2001/XMLSchema-instance"
+        nsmap = {k: v for k, v in EDT_NAMESPACES.items()}
+        root = etree.Element("{%s}Form" % NS_EDT, nsmap=nsmap)
+
+        # Elements (items)
+        for elem_spec in spec.elements:
+            self._add_edt_element(root, elem_spec, ns_xsi)
+
+        # AutoCommandBar
+        acb = etree.SubElement(root, "{%s}autoCommandBar" % NS_EDT)
+        acb_name = etree.SubElement(acb, "{%s}name" % NS_EDT)
+        acb_name.text = "ФормаКоманднаяПанель"
+        acb_id = etree.SubElement(acb, "{%s}id" % NS_EDT)
+        acb_id.text = "-1"
+        acb_fill = etree.SubElement(acb, "{%s}autoFill" % NS_EDT)
+        acb_fill.text = "true"
+
+        # autoTitle
+        at = etree.SubElement(root, "{%s}autoTitle" % NS_EDT)
+        at.text = "true"
+
+        # Form properties
+        grp = etree.SubElement(root, "{%s}group" % NS_EDT)
+        grp.text = "Vertical"
+        en = etree.SubElement(root, "{%s}enabled" % NS_EDT)
+        en.text = "true"
+
+        # Attributes
+        for attr_spec in spec.attributes:
+            self._add_edt_attribute(root, attr_spec, ns_xsi)
+
+        return _serialize_xml(root)
+
+    def _add_edt_element(
+        self,
+        parent: etree._Element,
+        spec: FormFieldSpec | FormGroupSpec | FormTableSpec,
+        ns_xsi: str,
+    ) -> None:
+        if isinstance(spec, FormGroupSpec):
+            self._add_edt_group(parent, spec, ns_xsi)
+        elif isinstance(spec, FormTableSpec):
+            self._add_edt_table(parent, spec, ns_xsi)
+        else:
+            self._add_edt_field(parent, spec, ns_xsi)
+
+    def _add_edt_field(
+        self, parent: etree._Element, spec: FormFieldSpec, ns_xsi: str
+    ) -> None:
+        item = etree.SubElement(
+            parent, "{%s}items" % NS_EDT,
+            {"{%s}type" % ns_xsi: "form:FormField"},
+        )
+        el_id = self._alloc_id()
+
+        name_el = etree.SubElement(item, "{%s}name" % NS_EDT)
+        name_el.text = spec.name
+        id_el = etree.SubElement(item, "{%s}id" % NS_EDT)
+        id_el.text = str(el_id)
+
+        if spec.data_path:
+            dp = etree.SubElement(
+                item, "{%s}dataPath" % NS_EDT,
+                {"{%s}type" % ns_xsi: "form:DataPath"},
+            )
+            seg = etree.SubElement(dp, "{%s}segments" % NS_EDT)
+            seg.text = spec.data_path
+
+        # extendedTooltip
+        tt = etree.SubElement(item, "{%s}extendedTooltip" % NS_EDT)
+        tt_name = etree.SubElement(tt, "{%s}name" % NS_EDT)
+        tt_name.text = spec.name + "РасширеннаяПодсказка"
+        tt_id = etree.SubElement(tt, "{%s}id" % NS_EDT)
+        tt_id.text = str(self._alloc_id())
+        tt_type = etree.SubElement(tt, "{%s}type" % NS_EDT)
+        tt_type.text = "Label"
+        tt_amw = etree.SubElement(tt, "{%s}autoMaxWidth" % NS_EDT)
+        tt_amw.text = "true"
+        tt_amh = etree.SubElement(tt, "{%s}autoMaxHeight" % NS_EDT)
+        tt_amh.text = "true"
+        tt_ei = etree.SubElement(
+            tt, "{%s}extInfo" % NS_EDT,
+            {"{%s}type" % ns_xsi: "form:LabelDecorationExtInfo"},
+        )
+        tt_ha = etree.SubElement(tt_ei, "{%s}horizontalAlign" % NS_EDT)
+        tt_ha.text = "Left"
+
+        # contextMenu
+        cm = etree.SubElement(item, "{%s}contextMenu" % NS_EDT)
+        cm_name = etree.SubElement(cm, "{%s}name" % NS_EDT)
+        cm_name.text = spec.name + "КонтекстноеМеню"
+        cm_id = etree.SubElement(cm, "{%s}id" % NS_EDT)
+        cm_id.text = str(self._alloc_id())
+        cm_fill = etree.SubElement(cm, "{%s}autoFill" % NS_EDT)
+        cm_fill.text = "true"
+
+        # type
+        type_el = etree.SubElement(item, "{%s}type" % NS_EDT)
+        type_el.text = spec.field_type
+
+        # extInfo
+        ext_type = _edt_field_ext_info_type(spec.field_type)
+        ei = etree.SubElement(
+            item, "{%s}extInfo" % NS_EDT,
+            {"{%s}type" % ns_xsi: ext_type},
+        )
+        amw = etree.SubElement(ei, "{%s}autoMaxWidth" % NS_EDT)
+        amw.text = "true"
+        amh = etree.SubElement(ei, "{%s}autoMaxHeight" % NS_EDT)
+        amh.text = "true"
+
+    def _add_edt_group(
+        self, parent: etree._Element, spec: FormGroupSpec, ns_xsi: str
+    ) -> None:
+        item = etree.SubElement(
+            parent, "{%s}items" % NS_EDT,
+            {"{%s}type" % ns_xsi: "form:FormGroup"},
+        )
+        name_el = etree.SubElement(item, "{%s}name" % NS_EDT)
+        name_el.text = spec.name
+        id_el = etree.SubElement(item, "{%s}id" % NS_EDT)
+        id_el.text = str(self._alloc_id())
+
+        # Children
+        for child in spec.children:
+            self._add_edt_element(item, child, ns_xsi)
+
+        if spec.title:
+            _add_edt_title(item, spec.title)
+
+        # extendedTooltip
+        tt = etree.SubElement(item, "{%s}extendedTooltip" % NS_EDT)
+        tt_name = etree.SubElement(tt, "{%s}name" % NS_EDT)
+        tt_name.text = spec.name + "РасширеннаяПодсказка"
+        tt_id = etree.SubElement(tt, "{%s}id" % NS_EDT)
+        tt_id.text = str(self._alloc_id())
+        tt_type = etree.SubElement(tt, "{%s}type" % NS_EDT)
+        tt_type.text = "Label"
+        tt_ei = etree.SubElement(
+            tt, "{%s}extInfo" % NS_EDT,
+            {"{%s}type" % ns_xsi: "form:LabelDecorationExtInfo"},
+        )
+        tt_ha = etree.SubElement(tt_ei, "{%s}horizontalAlign" % NS_EDT)
+        tt_ha.text = "Left"
+
+        # type
+        type_el = etree.SubElement(item, "{%s}type" % NS_EDT)
+        type_el.text = spec.group_type
+
+        # extInfo
+        ext_type = _edt_group_ext_info_type(spec.group_type)
+        ei = etree.SubElement(
+            item, "{%s}extInfo" % NS_EDT,
+            {"{%s}type" % ns_xsi: ext_type},
+        )
+        if spec.group_type == "UsualGroup":
+            rep = etree.SubElement(ei, "{%s}representation" % NS_EDT)
+            rep.text = "None"
+            show = etree.SubElement(ei, "{%s}showLeftMargin" % NS_EDT)
+            show.text = "true"
+            united = etree.SubElement(ei, "{%s}united" % NS_EDT)
+            united.text = "true"
+            ta = etree.SubElement(ei, "{%s}throughAlign" % NS_EDT)
+            ta.text = "Auto"
+            cru = etree.SubElement(ei, "{%s}currentRowUse" % NS_EDT)
+            cru.text = "Auto"
+
+    def _add_edt_table(
+        self, parent: etree._Element, spec: FormTableSpec, ns_xsi: str
+    ) -> None:
+        item = etree.SubElement(
+            parent, "{%s}items" % NS_EDT,
+            {"{%s}type" % ns_xsi: "form:Table"},
+        )
+        name_el = etree.SubElement(item, "{%s}name" % NS_EDT)
+        name_el.text = spec.name
+        id_el = etree.SubElement(item, "{%s}id" % NS_EDT)
+        id_el.text = str(self._alloc_id())
+
+        if spec.data_path:
+            dp = etree.SubElement(
+                item, "{%s}dataPath" % NS_EDT,
+                {"{%s}type" % ns_xsi: "form:DataPath"},
+            )
+            seg = etree.SubElement(dp, "{%s}segments" % NS_EDT)
+            seg.text = spec.data_path
+
+        # Column items
+        for col in spec.columns:
+            col_spec = FormFieldSpec(
+                name=col.name, data_path=col.data_path, title=col.title,
+            )
+            self._add_edt_field(item, col_spec, ns_xsi)
+
+    def _add_edt_attribute(
+        self, parent: etree._Element, spec: FormAttributeSpec, ns_xsi: str
+    ) -> None:
+        attr = etree.SubElement(parent, "{%s}attributes" % NS_EDT)
+        name_el = etree.SubElement(attr, "{%s}name" % NS_EDT)
+        name_el.text = spec.name
+        if spec.title:
+            _add_edt_title(attr, spec.title)
+        id_el = etree.SubElement(attr, "{%s}id" % NS_EDT)
+        id_el.text = str(self._alloc_attr_id())
+        vt = etree.SubElement(attr, "{%s}valueType" % NS_EDT)
+        types_el = etree.SubElement(vt, "{%s}types" % NS_EDT)
+        # Strip cfg: prefix if present
+        type_name = spec.type_name
+        if type_name.startswith("cfg:"):
+            type_name = type_name[4:]
+        types_el.text = type_name
+
+        view = etree.SubElement(attr, "{%s}view" % NS_EDT)
+        vc = etree.SubElement(view, "{%s}common" % NS_EDT)
+        vc.text = "true"
+        edit = etree.SubElement(attr, "{%s}edit" % NS_EDT)
+        ec = etree.SubElement(edit, "{%s}common" % NS_EDT)
+        ec.text = "true"
+
+        if spec.is_main:
+            main = etree.SubElement(attr, "{%s}main" % NS_EDT)
+            main.text = "true"
+        if spec.save_data:
+            sd = etree.SubElement(attr, "{%s}savedData" % NS_EDT)
+            sd.text = "true"
+
+
+def _edt_field_ext_info_type(field_type: str) -> str:
+    """Возвращает xsi:type для extInfo поля."""
+    mapping = {
+        "InputField": "form:InputFieldExtInfo",
+        "LabelField": "form:LabelFieldExtInfo",
+        "CheckBoxField": "form:CheckBoxFieldExtInfo",
+        "RadioButtonField": "form:RadioButtonsFieldExtInfo",
+        "ImageField": "form:ImageFieldExtInfo",
+        "SpreadSheetDocumentField": "form:SpreadSheetDocFieldExtInfo",
+        "CalendarField": "form:CalendarFieldExtInfo",
+        "TrackBarField": "form:TrackBarFieldExtInfo",
+        "ProgressBarField": "form:ProgressBarFieldExtInfo",
+    }
+    return mapping.get(field_type, "form:InputFieldExtInfo")
+
+
+def _edt_group_ext_info_type(group_type: str) -> str:
+    """Возвращает xsi:type для extInfo группы."""
+    mapping = {
+        "UsualGroup": "form:UsualGroupExtInfo",
+        "Pages": "form:PagesGroupExtInfo",
+        "Page": "form:PageGroupExtInfo",
+        "ColumnGroup": "form:ColumnGroupExtInfo",
+        "CommandBar": "form:CommandBarExtInfo",
+        "Popup": "form:PopupGroupExtInfo",
+    }
+    return mapping.get(group_type, "form:UsualGroupExtInfo")
+
+
+def _add_edt_title(parent: etree._Element, text: str) -> None:
+    """Добавляет заголовок в EDT-формате: <title><key>ru</key><value>текст</value></title>."""
+    title = etree.SubElement(parent, "{%s}title" % NS_EDT)
+    key = etree.SubElement(title, "{%s}key" % NS_EDT)
+    key.text = "ru"
+    val = etree.SubElement(title, "{%s}value" % NS_EDT)
+    val.text = text
 
 
 # =================== Утилиты ===================

@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from lxml import etree
 
-from mcp_forms.forms.loader import FormDocument, NS_LOGFORM
+from mcp_forms.forms.loader import FormDocument, NS_EDT, NS_LOGFORM
 
 # Элементы формы, которые могут содержать ChildItems / Elements
 _CONTAINER_TAGS = {
@@ -113,11 +113,13 @@ def validate_form(doc: FormDocument) -> ValidationResult:
     result = ValidationResult(format=doc.format, version=doc.version)
 
     if doc.format == "unknown":
-        result.add_error("Неизвестный формат Form.xml — не logform и не managed")
+        result.add_error("Неизвестный формат Form.xml — не logform, managed или edt")
         return result
 
     if doc.format == "logform":
         _validate_logform(doc, result)
+    elif doc.format == "edt":
+        _validate_edt(doc, result)
     else:
         _validate_managed(doc, result)
 
@@ -196,6 +198,135 @@ def _validate_managed(doc: FormDocument, result: ValidationResult) -> None:
     elements = root.find("{%s}Elements" % ns) if ns else root.find("Elements")
     if elements is None:
         result.add_warning("Секция <Elements> отсутствует", element="ManagedForm")
+
+
+_EDT_VALID_ITEM_TYPES = {
+    "form:FormField", "form:FormGroup", "form:Table",
+    "form:Button", "form:Decoration",
+}
+
+
+def _validate_edt(doc: FormDocument, result: ValidationResult) -> None:
+    """Валидация формата EDT (form:Form)."""
+    root = doc.root
+    ns = NS_EDT
+
+    local_tag = _local_name(root.tag)
+    if local_tag != "Form":
+        result.add_error(
+            "Root элемент должен быть <form:Form>, найден: <%s>" % local_tag,
+            element="root",
+        )
+        return
+
+    ns_xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi_type_attr = "{%s}type" % ns_xsi
+
+    # Collect all ids recursively (items + attributes)
+    all_ids: dict[str, list[str]] = {}
+    _collect_edt_ids(root, ns, xsi_type_attr, all_ids)
+
+    for id_val, names in all_ids.items():
+        if id_val == "-1":
+            continue
+        if len(names) > 1:
+            result.add_error(
+                "Дублирующийся id=%s: %s" % (id_val, ", ".join(names)),
+                element="id=" + id_val,
+            )
+
+    # Validate items have xsi:type
+    for item in _iter_edt(root, "items", ns):
+        xsi_type = item.get(xsi_type_attr, "")
+        if not xsi_type:
+            name_el = _find_edt_child(item, "name", ns)
+            name_text = name_el.text if name_el is not None else "?"
+            result.add_warning(
+                "Элемент <items> без xsi:type: %s" % name_text,
+                element=name_text,
+            )
+        elif xsi_type not in _EDT_VALID_ITEM_TYPES:
+            result.add_warning(
+                "Неизвестный xsi:type: %s" % xsi_type,
+                element=xsi_type,
+            )
+
+    # Validate attributes have name, id, valueType
+    for attr in _findall_edt(root, "attributes", ns):
+        name_el = _find_edt_child(attr, "name", ns)
+        id_el = _find_edt_child(attr, "id", ns)
+        vt_el = _find_edt_child(attr, "valueType", ns)
+
+        attr_name = name_el.text if name_el is not None else "?"
+        if name_el is None:
+            result.add_error("Атрибут без <name>", element="attributes")
+        if id_el is None:
+            result.add_error("Атрибут '%s' без <id>" % attr_name, element=attr_name)
+        if vt_el is None:
+            result.add_warning(
+                "Атрибут '%s' без <valueType>" % attr_name, element=attr_name
+            )
+
+    # Validate dataPath has segments
+    for dp in _iter_edt(root, "dataPath", ns):
+        segments = _findall_edt(dp, "segments", ns)
+        if not segments:
+            parent = dp.getparent()
+            parent_name = "?"
+            if parent is not None:
+                pn = _find_edt_child(parent, "name", ns)
+                if pn is not None:
+                    parent_name = pn.text or "?"
+            result.add_warning(
+                "dataPath без <segments> в элементе '%s'" % parent_name,
+                element=parent_name,
+            )
+
+
+def _find_edt_child(element: etree._Element, local_name: str, ns: str) -> etree._Element | None:
+    """Найти дочерний элемент по локальному имени (с namespace или без)."""
+    el = element.find("{%s}%s" % (ns, local_name))
+    if el is None:
+        el = element.find(local_name)
+    return el
+
+
+def _findall_edt(element: etree._Element, local_name: str, ns: str) -> list[etree._Element]:
+    """Найти все дочерние элементы по локальному имени (с namespace или без, без дубликатов)."""
+    result = element.findall("{%s}%s" % (ns, local_name))
+    seen = set(id(el) for el in result)
+    for el in element.findall(local_name):
+        if id(el) not in seen:
+            result.append(el)
+    return result
+
+
+def _iter_edt(root: etree._Element, local_name: str, ns: str):
+    """Итерировать по элементам с данным именем (с namespace или без, без дубликатов)."""
+    seen: set[int] = set()
+    for el in root.iter("{%s}%s" % (ns, local_name)):
+        seen.add(id(el))
+        yield el
+    for el in root.iter(local_name):
+        if id(el) not in seen:
+            yield el
+
+
+def _collect_edt_ids(
+    element: etree._Element,
+    ns: str,
+    xsi_type_attr: str,
+    ids: dict[str, list[str]],
+) -> None:
+    """Рекурсивно собирает id из EDT-формы."""
+    id_el = _find_edt_child(element, "id", ns)
+    if id_el is not None and id_el.text:
+        name_el = _find_edt_child(element, "name", ns)
+        name = name_el.text if name_el is not None else _local_name(element.tag)
+        ids.setdefault(id_el.text, []).append(name)
+
+    for child in element:
+        _collect_edt_ids(child, ns, xsi_type_attr, ids)
 
 
 # =================== Вспомогательные функции ===================

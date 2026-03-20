@@ -7,20 +7,18 @@ from mcp_forms.forms.loader import detect_format
 
 
 def convert_form(xml_content: str, target_format: str) -> dict:
-    """Конвертировать Form.xml между форматами logform и managed.
+    """Конвертировать Form.xml между форматами.
 
     Args:
-        xml_content: содержимое Form.xml
-        target_format: целевой формат ("logform", "edt" или "managed")
-            - "logform" / "edt" — формат EDT и Конфигуратора (<Form>)
+        xml_content: содержимое Form.xml / Form.form
+        target_format: целевой формат:
+            - "logform" — формат Конфигуратора (<Form xmlns="...xcf/logform">)
             - "managed" — упрощённый формат (<ManagedForm>)
+            - "edt" — формат EDT (<form:Form xmlns:form="...dt/form">)
 
     Returns:
         dict с ключами: xml, source_format, target_format, success, errors
     """
-    # "edt" — алиас для "logform" (EDT использует logform-формат для Form.xml)
-    effective_format = "logform" if target_format == "edt" else target_format
-
     source_format = detect_format(xml_content)
 
     if source_format == "unknown":
@@ -32,17 +30,17 @@ def convert_form(xml_content: str, target_format: str) -> dict:
             "target_format": target_format,
         }
 
-    if source_format == effective_format:
+    if source_format == target_format:
         return {
             "success": False,
-            "errors": [f"Форма уже в формате {target_format} ({effective_format})"],
+            "errors": [f"Форма уже в формате {target_format}"],
             "xml": "",
             "source_format": source_format,
             "target_format": target_format,
         }
 
     try:
-        result_xml = _convert(xml_content, effective_format)
+        result_xml = _convert(xml_content, target_format)
         return {
             "success": True,
             "errors": [],
