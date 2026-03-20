@@ -125,8 +125,10 @@ def list_templates() -> dict:
 
 def _dict_to_spec(d: dict) -> FormSpec:
     """Конвертирует словарь в FormSpec."""
+    _attr_fields = {f.name for f in FormAttributeSpec.__dataclass_fields__.values()}
     attributes = [
-        FormAttributeSpec(**a) for a in d.get("attributes", [])
+        FormAttributeSpec(**{k: v for k, v in a.items() if k in _attr_fields})
+        for a in d.get("attributes", [])
     ]
     elements = [_dict_to_element(e) for e in d.get("elements", [])]
 
@@ -143,11 +145,15 @@ def _dict_to_spec(d: dict) -> FormSpec:
 
 def _dict_to_element(d: dict) -> FormFieldSpec | FormGroupSpec | FormTableSpec:
     """Конвертирует словарь в спецификацию элемента."""
+    _col_fields = {f.name for f in FormTableColumnSpec.__dataclass_fields__.values()}
     if "columns" in d:
         return FormTableSpec(
             name=d["name"],
             data_path=d.get("data_path", ""),
-            columns=[FormTableColumnSpec(**c) for c in d["columns"]],
+            columns=[
+                FormTableColumnSpec(**{k: v for k, v in c.items() if k in _col_fields})
+                for c in d["columns"]
+            ],
         )
     if "children" in d:
         return FormGroupSpec(
