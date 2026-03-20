@@ -182,7 +182,7 @@ python -m mcp_forms
 
 ### EDT интеграция
 
-Требует запущенный EDT MCP сервер (`EDT_ENABLED=true`).
+Требует запущенный [EDT MCP](https://github.com/DitriXNew/EDT-MCP) сервер (`EDT_ENABLED=true`).
 
 **`edt_status`** — проверить доступность EDT. Вызвать перед другими EDT-инструментами.
 
@@ -252,7 +252,7 @@ python -m mcp_forms
 | `TRANSPORT` | `streamable-http` | Транспорт MCP (streamable-http, sse) |
 | `DATABASES_PATH` | `./databases` | Путь к базам данных поиска |
 | `DATA_PATH` | `./data` | Путь к данным (схемы, промпт) |
-| `EDT_ENABLED` | `false` | Включить интеграцию с EDT MCP |
+| `EDT_ENABLED` | `false` | Включить интеграцию с [EDT MCP](https://github.com/DitriXNew/EDT-MCP) |
 | `EDT_MCP_URL` | `http://localhost:9999/sse` | URL EDT MCP сервера |
 | `EDT_TIMEOUT` | `10` | Таймаут запросов к EDT (сек) |
 
@@ -264,7 +264,7 @@ python -m mcp_forms
 src/mcp_forms/
 ├── server.py           # FastMCP сервер (18 инструментов)
 ├── config.py           # Конфигурация из env vars
-├── edt_client.py       # Клиент EDT MCP (graceful degradation)
+├── edt_client.py       # Клиент EDT MCP (https://github.com/DitriXNew/EDT-MCP)
 ├── schema/             # Парсер Xcore, Pydantic-модель, валидатор
 ├── forms/              # Загрузчик, генератор, конвертер, шаблоны
 │   ├── loader.py       # Автоопределение формата, загрузка XML
