@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from mcp_forms.config import DATA_PATH, EDT_REFERENCE_PATH
+from mcp_forms.config import DATA_PATH, EDT_REFERENCE_PATH, FORM_PROMPT_EDT_MD
 
 
 def get_form_schema() -> dict:
@@ -25,19 +25,26 @@ def get_form_schema() -> dict:
         return json.load(f)
 
 
-def get_form_prompt() -> str:
+def get_form_prompt(format: str = "logform") -> str:
     """Получить промпт с базой знаний по тегам и атрибутам формы.
 
-    Возвращает содержимое formprompt.md — подробное описание
-    всех допустимых тегов, атрибутов и значений для XML-форм 1С.
+    Возвращает описание всех допустимых тегов, атрибутов и значений
+    для XML-форм 1С в указанном формате.
     Используется как контекст для LLM при генерации/валидации форм.
+
+    Args:
+        format: формат формы — "logform" (по умолчанию), "managed" или "edt"
 
     Returns:
         str — текст промпта
     """
-    prompt_path = DATA_PATH / "formprompt.md"
+    if format == "edt":
+        prompt_path = FORM_PROMPT_EDT_MD
+    else:
+        prompt_path = DATA_PATH / "formprompt.md"
+
     if not prompt_path.exists():
-        return "formprompt.md не найден в %s" % DATA_PATH
+        return "%s не найден в %s" % (prompt_path.name, prompt_path.parent)
 
     return prompt_path.read_text(encoding="utf-8")
 

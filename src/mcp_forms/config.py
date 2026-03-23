@@ -23,6 +23,7 @@ TRANSPORT = os.getenv("TRANSPORT", "streamable-http")
 # Файлы данных
 FORM_SCHEMA_JSON = DATA_PATH / "form_schema.json"
 FORM_PROMPT_MD = DATA_PATH / "formprompt.md"
+FORM_PROMPT_EDT_MD = DATA_PATH / "formprompt_edt.md"
 FORM_XCORE = EDT_REFERENCE_PATH / "Form.xcore"
 FORMS_KNOWLEDGE_DB = DATABASES_PATH / "forms_knowledge.db"
 

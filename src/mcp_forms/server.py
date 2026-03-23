@@ -23,14 +23,16 @@ mcp = FastMCP(
         "Сервер для работы с управляемыми формами 1С (Form.xml). "
         "Три формата: logform (Конфигуратор), managed (упрощённый), edt (EDT form:Form).\n\n"
         "Типовой workflow генерации формы:\n"
-        "1. get_form_prompt — загрузить базу знаний по Form.xml (обязательно перед генерацией)\n"
+        "1. get_form_prompt(format) — загрузить базу знаний (обязательно перед генерацией).\n"
+        "   Для EDT-проектов: format='edt', для Конфигуратора: format='logform' (по умолчанию)\n"
         "2. search_form_examples — найти похожий пример как образец\n"
         "3. generate_form_template (типовая форма) или generate_form (произвольная спецификация)\n"
         "4. validate_form — проверить результат\n\n"
         "Если подключён EDT (edt_status), доступен расширенный workflow:\n"
-        "1. get_object_metadata — получить реквизиты объекта из проекта\n"
-        "2. generate_form_from_metadata — автогенерация спецификации\n"
-        "3. validate_form_edt — валидация с проверками EDT\n\n"
+        "1. get_form_prompt(format='edt') — загрузить EDT-базу знаний\n"
+        "2. get_object_metadata — получить реквизиты объекта из проекта\n"
+        "3. generate_form_from_metadata — автогенерация спецификации\n"
+        "4. validate_form_edt — валидация с проверками EDT\n\n"
         "Конвертация между форматами: convert_form."
     ),
 )
@@ -84,15 +86,23 @@ def get_form_schema() -> dict:
 
 
 @mcp.tool()
-def get_form_prompt() -> str:
+def get_form_prompt(format: str = "logform") -> str:
     """Полная база знаний по Form.xml — теги, атрибуты, допустимые значения, правила.
 
     ОБЯЗАТЕЛЬНО вызывай перед первой генерацией формы в сессии. Загружает контекст,
     необходимый для корректного построения Form.xml. Без этого контекста генерация
     будет содержать ошибки в именах тегов и значениях атрибутов.
     Достаточно вызвать один раз за сессию.
+
+    Формат выбирай в зависимости от целевого формата генерации:
+    - "logform" — формат Конфигуратора (<Form xmlns="...xcf/logform">), по умолчанию
+    - "managed" — упрощённый формат (использует ту же базу знаний что logform)
+    - "edt" — формат EDT (<form:Form xmlns:form="...dt/form">), для EDT-проектов
+
+    Args:
+        format: "logform" (по умолчанию), "managed" или "edt"
     """
-    return _get_form_prompt()
+    return _get_form_prompt(format=format)
 
 
 @mcp.tool()
