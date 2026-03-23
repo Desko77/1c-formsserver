@@ -9,6 +9,7 @@ import pytest
 from mcp_forms.forms.loader import detect_format, load_form
 from mcp_forms.forms.generator import (
     FormAttributeSpec,
+    FormButtonSpec,
     FormFieldSpec,
     FormGroupSpec,
     FormSpec,
@@ -70,6 +71,24 @@ class TestEdtGeneration:
         assert "extendedTooltip" in xml or "ExtendedTooltip" in xml
         assert "contextMenu" in xml or "ContextMenu" in xml
         assert "InputFieldExtInfo" in xml
+        # Баг 1: visible/enabled/userVisible
+        assert "<form:visible>true</form:visible>" in xml
+        assert "<form:enabled>true</form:enabled>" in xml
+        assert "<form:userVisible>" in xml and "<form:common>true</form:common>" in xml
+        # Баг 5: InputField extended properties
+        assert "chooseType" in xml
+        assert "typeDomainEnabled" in xml
+        assert "textEdit" in xml
+
+    def test_generate_field_invisible(self) -> None:
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormFieldSpec(name="Скрытое", data_path="Объект.Скрытое", visible=False),
+            ],
+        )
+        xml = generate_form(spec)
+        assert "<form:visible>false</form:visible>" in xml
 
     def test_generate_group(self) -> None:
         spec = FormSpec(
@@ -90,6 +109,35 @@ class TestEdtGeneration:
         assert "UsualGroupExtInfo" in xml
         assert "key>" in xml and "ru" in xml
 
+    def test_generate_group_horizontal(self) -> None:
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormGroupSpec(name="Горизонтальная", group_type="UsualGroup", direction="Horizontal"),
+            ],
+        )
+        xml = generate_form(spec)
+        # direction should be inside UsualGroupExtInfo, not at items level
+        assert "UsualGroupExtInfo" in xml
+        # HorizontalIfPossible inside extInfo
+        ext_info_pos = xml.index("UsualGroupExtInfo")
+        group_pos = xml.index("HorizontalIfPossible")
+        assert group_pos > ext_info_pos
+
+    def test_generate_group_vertical_no_group_in_extinfo(self) -> None:
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormGroupSpec(name="Вертикальная", group_type="UsualGroup", direction="Vertical"),
+            ],
+        )
+        xml = generate_form(spec)
+        # Vertical is default — no <group> inside extInfo
+        ext_start = xml.index("UsualGroupExtInfo")
+        ext_end = xml.index("</form:extInfo>", ext_start)
+        ext_info_block = xml[ext_start:ext_end]
+        assert "<form:group>" not in ext_info_block
+
     def test_generate_table(self) -> None:
         spec = FormSpec(
             format="edt",
@@ -107,6 +155,51 @@ class TestEdtGeneration:
         assert "form:Table" in xml
         assert "form:FormField" in xml
         assert "Номенклатура" in xml
+        # Баг 4: autoCommandBar таблицы
+        assert "ТоварыКоманднаяПанель" in xml
+        # Баг 7: visible/enabled/userVisible, extendedTooltip, contextMenu
+        assert "ТоварыРасширеннаяПодсказка" in xml
+        assert "ТоварыКонтекстноеМеню" in xml
+
+    def test_generate_table_column_properties(self) -> None:
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormTableSpec(
+                    name="Товары",
+                    data_path="Объект.Товары",
+                    columns=[
+                        FormTableColumnSpec(name="Номенклатура", data_path="Объект.Товары.Номенклатура"),
+                    ],
+                ),
+            ],
+        )
+        xml = generate_form(spec)
+        # Баг 6: колонки имеют editMode, showInHeader, showInFooter
+        assert "<form:editMode>Enter</form:editMode>" in xml
+        assert "<form:showInHeader>true</form:showInHeader>" in xml
+        assert "<form:showInFooter>true</form:showInFooter>" in xml
+        assert "<form:headerHorizontalAlign>Left</form:headerHorizontalAlign>" in xml
+
+    def test_generate_table_companions(self) -> None:
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormTableSpec(
+                    name="Товары",
+                    data_path="Объект.Товары",
+                    columns=[
+                        FormTableColumnSpec(name="Номенклатура", data_path="Объект.Товары.Номенклатура"),
+                    ],
+                ),
+            ],
+        )
+        xml = generate_form(spec)
+        # Баг 9: searchStringAddition, viewStatusAddition
+        assert "ТоварыСтрокаПоиска" in xml
+        assert "SearchStringAdditionExtInfo" in xml
+        assert "ТоварыСостояниеПросмотра" in xml
+        assert "ViewStatusAdditionExtInfo" in xml
 
     def test_generate_attribute_strips_cfg(self) -> None:
         spec = FormSpec(
@@ -121,12 +214,51 @@ class TestEdtGeneration:
         assert "main>" in xml and "true" in xml
         assert "savedData>" in xml
 
+    def test_generate_button(self) -> None:
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormButtonSpec(name="Выполнить", command_name="Выполнить", representation="Text"),
+            ],
+        )
+        xml = generate_form(spec)
+        assert "form:Button" in xml
+        assert "<form:commandName>Выполнить</form:commandName>" in xml
+        assert "<form:visible>true</form:visible>" in xml
+        assert "<form:representation>Text</form:representation>" in xml
+        assert "extendedTooltip" in xml
+
+    def test_generate_attribute_xs_types(self) -> None:
+        spec = FormSpec(
+            format="edt",
+            attributes=[
+                FormAttributeSpec(name="Флаг", type_name="xs:boolean"),
+                FormAttributeSpec(name="Сумма", type_name="xs:decimal"),
+                FormAttributeSpec(name="Текст", type_name="xs:string"),
+                FormAttributeSpec(name="Дата", type_name="xs:dateTime"),
+            ],
+        )
+        xml = generate_form(spec)
+        assert ">Boolean<" in xml
+        assert ">Number<" in xml
+        assert ">String<" in xml
+        assert ">Date<" in xml
+        assert "xs:" not in xml
+
     def test_generate_auto_command_bar(self) -> None:
         spec = FormSpec(format="edt")
         xml = generate_form(spec)
         assert "autoCommandBar" in xml
         assert ">-1<" in xml
         assert "autoTitle" in xml
+
+    def test_generate_form_root_properties(self) -> None:
+        spec = FormSpec(format="edt")
+        xml = generate_form(spec)
+        assert "<form:autoUrl>true</form:autoUrl>" in xml
+        assert "<form:autoFillCheck>true</form:autoFillCheck>" in xml
+        assert "<form:showTitle>true</form:showTitle>" in xml
+        assert "<form:showCloseButton>true</form:showCloseButton>" in xml
 
 
 # =================== Validation ===================
