@@ -9,7 +9,7 @@ services:
     environment:
       - PORT=8011
       - TRANSPORT=streamable-http
-      - EDT_ENABLED=${EDT_ENABLED:-false}
+      - EDT_ENABLED=${EDT_ENABLED:-true}
       - EDT_MCP_URL=${EDT_MCP_URL:-http://host.docker.internal:9999/sse}
       - EDT_TIMEOUT=${EDT_TIMEOUT:-10}
     extra_hosts:

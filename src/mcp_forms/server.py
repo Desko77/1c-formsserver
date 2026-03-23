@@ -243,18 +243,21 @@ def get_form_example(form_id: int) -> dict:
 
 
 @mcp.tool()
-def edt_status() -> dict:
+def edt_status(edt_url: str = "") -> dict:
     """Проверить доступность EDT. Вызывай перед использованием EDT-инструментов.
 
     Возвращает: включён ли EDT, URL, доступен ли сервер.
     Если EDT недоступен — инструменты get_object_metadata, validate_form_edt,
     form_screenshot, generate_form_from_metadata не будут работать.
+
+    Args:
+        edt_url: URL EDT MCP сервера (напр. "http://localhost:9999/sse"). Если не указан — из настроек.
     """
-    return _get_edt_status()
+    return _get_edt_status(edt_url)
 
 
 @mcp.tool()
-def get_object_metadata(object_type: str, object_name: str) -> dict:
+def get_object_metadata(object_type: str, object_name: str, edt_url: str = "") -> dict:
     """Получить реквизиты и табличные части объекта 1С из EDT — для построения спецификации формы.
 
     Возвращает все допустимые DataPath для формы: реквизиты, ТЧ, стандартные реквизиты.
@@ -263,12 +266,13 @@ def get_object_metadata(object_type: str, object_name: str) -> dict:
     Args:
         object_type: тип объекта (Catalog, Document, DataProcessor)
         object_name: имя объекта (Номенклатура, ПоступлениеТоваров...)
+        edt_url: URL EDT MCP сервера (напр. "http://localhost:9999/sse"). Если не указан — из настроек.
     """
-    return _get_object_metadata(object_type, object_name)
+    return _get_object_metadata(object_type, object_name, edt_url)
 
 
 @mcp.tool()
-def validate_form_edt(xml_content: str, form_fqn: str = "") -> dict:
+def validate_form_edt(xml_content: str, form_fqn: str = "", edt_url: str = "") -> dict:
     """Расширенная валидация формы: встроенные проверки + проверки EDT.
 
     Всегда выполняет структурную валидацию (как validate_form).
@@ -279,20 +283,22 @@ def validate_form_edt(xml_content: str, form_fqn: str = "") -> dict:
     Args:
         xml_content: содержимое Form.xml целиком
         form_fqn: FQN формы в проекте (напр. "Catalog.Номенклатура.Form.ФормаЭлемента")
+        edt_url: URL EDT MCP сервера. Если не указан — из настроек.
     """
-    return _validate_form_edt(xml_content, form_fqn)
+    return _validate_form_edt(xml_content, form_fqn, edt_url)
 
 
 @mcp.tool()
-def form_screenshot(form_fqn: str) -> dict:
+def form_screenshot(form_fqn: str, edt_url: str = "") -> dict:
     """Скриншот формы из WYSIWYG-редактора EDT — для визуальной проверки результата.
 
     Требует подключения к EDT (проверь через edt_status) и открытый проект.
 
     Args:
         form_fqn: FQN формы (напр. "Catalog.Номенклатура.Form.ФормаЭлемента")
+        edt_url: URL EDT MCP сервера. Если не указан — из настроек.
     """
-    return _get_form_screenshot(form_fqn)
+    return _get_form_screenshot(form_fqn, edt_url)
 
 
 @mcp.tool()
@@ -302,6 +308,7 @@ def generate_form_from_metadata(
     form_type: str = "ФормаЭлемента",
     format: str = "logform",
     include_table_parts: bool = True,
+    edt_url: str = "",
 ) -> dict:
     """Автогенерация формы из метаданных EDT — самый быстрый способ при наличии EDT.
 
@@ -313,10 +320,11 @@ def generate_form_from_metadata(
         object_type: тип объекта (Catalog, Document, DataProcessor)
         object_name: имя объекта (Номенклатура, ПоступлениеТоваров...)
         form_type: тип формы ("ФормаЭлемента", "ФормаДокумента", "ФормаСписка")
-        format: "logform" (по умолчанию), "managed" или "edt". 
+        format: "logform" (по умолчанию), "managed" или "edt".
         include_table_parts: включать табличные части в форму (по умолчанию true)
+        edt_url: URL EDT MCP сервера (напр. "http://localhost:9999/sse"). Если не указан — из настроек.
     """
-    return _gen_spec_from_metadata(object_type, object_name, form_type, format, include_table_parts)
+    return _gen_spec_from_metadata(object_type, object_name, form_type, format, include_table_parts, edt_url)
 
 
 # =================== Info ===================

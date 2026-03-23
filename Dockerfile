@@ -23,7 +23,7 @@ ENV TRANSPORT=streamable-http
 ENV DATABASES_PATH=/databases
 ENV DATA_PATH=/app/data
 ENV EDT_REFERENCE_PATH=/app/edt_reference
-ENV EDT_ENABLED=false
+ENV EDT_ENABLED=true
 ENV EDT_MCP_URL=http://host.docker.internal:9999/sse
 ENV EDT_TIMEOUT=10
 

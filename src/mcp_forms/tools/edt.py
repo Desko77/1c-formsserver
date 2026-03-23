@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
-from mcp_forms.edt_client import get_edt_client, MetadataInfo
+from mcp_forms.edt_client import get_edt_client, EDTClient, MetadataInfo
 
 
-def get_edt_status() -> dict:
+def _client(edt_url: str = "") -> EDTClient:
+    """Получить EDT-клиент: с указанным URL или глобальный."""
+    if edt_url:
+        return EDTClient(url=edt_url, enabled=True)
+    return get_edt_client()
+
+
+def get_edt_status(edt_url: str = "") -> dict:
     """Проверить статус EDT MCP сервера.
 
     Returns:
         dict с ключами: available, enabled, url
     """
-    client = get_edt_client()
+    client = _client(edt_url)
     return {
         "enabled": client.enabled,
         "url": client.url,
@@ -19,7 +26,7 @@ def get_edt_status() -> dict:
     }
 
 
-def get_object_metadata(object_type: str, object_name: str) -> dict:
+def get_object_metadata(object_type: str, object_name: str, edt_url: str = "") -> dict:
     """Получить метаданные объекта 1С из EDT для генерации формы.
 
     Возвращает реквизиты, табличные части, стандартные реквизиты — всё,
@@ -28,11 +35,12 @@ def get_object_metadata(object_type: str, object_name: str) -> dict:
     Args:
         object_type: тип объекта (Catalog, Document, DataProcessor, Справочник, Документ...)
         object_name: имя объекта (Номенклатура, ПоступлениеТоваров...)
+        edt_url: URL EDT MCP сервера (если не указан — берётся из настроек)
 
     Returns:
         dict с ключами: success, fqn, attributes, table_parts, datapaths
     """
-    client = get_edt_client()
+    client = _client(edt_url)
 
     if not client.enabled:
         return {
@@ -50,7 +58,7 @@ def get_object_metadata(object_type: str, object_name: str) -> dict:
     return _metadata_to_dict(info)
 
 
-def validate_form_with_edt(xml_content: str, form_fqn: str = "") -> dict:
+def validate_form_with_edt(xml_content: str, form_fqn: str = "", edt_url: str = "") -> dict:
     """Валидировать форму через EDT (дополнительно к встроенной валидации).
 
     Вызывает get_project_errors для формы. Если form_fqn не указан,
@@ -74,7 +82,7 @@ def validate_form_with_edt(xml_content: str, form_fqn: str = "") -> dict:
         "edt_available": False,
     }
 
-    client = get_edt_client()
+    client = _client(edt_url)
     if not client.enabled or not form_fqn:
         return result
 
@@ -95,16 +103,17 @@ def validate_form_with_edt(xml_content: str, form_fqn: str = "") -> dict:
     return result
 
 
-def get_form_screenshot(form_fqn: str) -> dict:
+def get_form_screenshot(form_fqn: str, edt_url: str = "") -> dict:
     """Получить скриншот формы из EDT WYSIWYG-редактора.
 
     Args:
         form_fqn: FQN формы (напр. Catalog.Номенклатура.Form.ФормаЭлемента)
+        edt_url: URL EDT MCP сервера (если не указан — берётся из настроек)
 
     Returns:
         dict с ключами: success, screenshot_base64
     """
-    client = get_edt_client()
+    client = _client(edt_url)
 
     if not client.enabled:
         return {
@@ -132,6 +141,7 @@ def generate_form_spec_from_metadata(
     form_type: str = "ФормаЭлемента",
     format: str = "logform",
     include_table_parts: bool = True,
+    edt_url: str = "",
 ) -> dict:
     """Сгенерировать спецификацию формы на основе метаданных из EDT.
 
@@ -147,7 +157,7 @@ def generate_form_spec_from_metadata(
     Returns:
         dict со спецификацией для generate_form или ошибкой
     """
-    client = get_edt_client()
+    client = _client(edt_url)
 
     if not client.enabled:
         return {

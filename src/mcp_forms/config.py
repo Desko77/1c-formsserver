@@ -32,5 +32,5 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen3-235b-a22b-2507")
 
 # EDT MCP интеграция (опционально)
 EDT_MCP_URL = os.getenv("EDT_MCP_URL", "http://localhost:9999/sse")
-EDT_ENABLED = os.getenv("EDT_ENABLED", "false").lower() in ("true", "1", "yes")
+EDT_ENABLED = os.getenv("EDT_ENABLED", "true").lower() in ("true", "1", "yes")
 EDT_TIMEOUT = int(os.getenv("EDT_TIMEOUT", "10"))
