@@ -109,6 +109,7 @@
             "properties": {
                 "name": { "type": "string" },
                 "id": { "type": "int" },
+                "type": { "type": "ManagedFormButtonType", "description": "Тип кнопки: UsualButton (вне CommandBar), CommandBarButton (в CommandBar, дефолт)" },
                 "visible": { "type": "boolean" },
                 "enabled": { "type": "boolean" },
                 "commandName": { "type": "string", "description": "Имя команды: Form.Command.ИмяКоманды" },
@@ -290,6 +291,18 @@
             }
         }
     },
+    "handlers_placement": {
+        "description": "Обработчики событий (handlers) размещаются на ДВУХ уровнях. FormField и FieldExtInfo оба имеют <handlers>. Правильное размещение критично.",
+        "extInfo_handlers": {
+            "description": "Обработчики в <extInfo><handlers>. Для событий, связанных с ВВОДОМ и ВЫБОРОМ значения.",
+            "events": ["StartChoice", "Clearing", "Opening", "ChoiceProcessing", "AutoComplete", "TextEditEnd"]
+        },
+        "element_handlers": {
+            "description": "Обработчики на уровне элемента <items><handlers>. Для событий, связанных с ИЗМЕНЕНИЕМ и ПЕРЕТАСКИВАНИЕМ.",
+            "events": ["OnChange", "DragStart", "DragEnd", "DragOver", "DragAndDropDone"]
+        },
+        "format": "<handlers>\n  <event>EventName</event>\n  <name>ИмяПроцедурыОбработчика</name>\n</handlers>"
+    },
     "attributes_structure": {
         "description": "Реквизиты формы. Корневые <attributes> элементы формы.",
         "children_order": ["name", "title", "id", "valueType", "view", "edit", "main", "savedData", "columns"],
@@ -356,7 +369,8 @@
         "FormButtonRepresentation": ["Auto", "PictureAndText", "Text", "Picture"],
         "TableRepresentation": ["List", "HierarchicalList", "Tree"],
         "TableSelectionMode": ["SingleRow", "MultiRow"],
-        "LogFormScrollMode": ["Auto", "Use", "UseIfNecessary", "UseWithoutStretch"]
+        "LogFormScrollMode": ["Auto", "Use", "UseIfNecessary", "UseWithoutStretch"],
+        "ManagedFormButtonType": ["CommandBarButton", "UsualButton"]
     },
     "id_rules": {
         "description": "В EDT три отдельных пространства ID. ID должны быть уникальны ВНУТРИ своего пространства.",

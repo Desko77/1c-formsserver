@@ -205,6 +205,18 @@ _EDT_VALID_ITEM_TYPES = {
     "form:Button", "form:Decoration",
 }
 
+# Handlers, которые должны быть в extInfo.handlers, а не в FormField.handlers
+_EXTINFO_HANDLER_EVENTS = {
+    "StartChoice", "Clearing", "Opening", "ChoiceProcessing",
+    "AutoComplete", "TextEditEnd",
+}
+
+# Обязательные свойства InputFieldExtInfo
+_INPUT_FIELD_REQUIRED_PROPS = {"chooseType", "typeDomainEnabled", "textEdit"}
+
+# Обязательные свойства колонки таблицы
+_TABLE_COLUMN_REQUIRED_PROPS = {"editMode", "showInHeader", "showInFooter"}
+
 
 def _validate_edt(doc: FormDocument, result: ValidationResult) -> None:
     """Валидация формата EDT (form:Form)."""
@@ -303,6 +315,126 @@ def _validate_edt(doc: FormDocument, result: ValidationResult) -> None:
                 "dataPath без <segments> в элементе '%s'" % parent_name,
                 element=parent_name,
             )
+
+    # EDT-дефолты: soft-warnings для пропущенных свойств
+    _check_edt_defaults(root, ns, ns_xsi, xsi_type_attr, result)
+
+
+def _check_edt_defaults(
+    root: etree._Element,
+    ns: str,
+    ns_xsi: str,
+    xsi_type_attr: str,
+    result: ValidationResult,
+) -> None:
+    """Проверяет наличие рекомендуемых EDT-свойств (soft-warnings)."""
+
+    for item in _iter_edt(root, "items", ns):
+        xsi_type = item.get(xsi_type_attr, "")
+        name_el = _find_edt_child(item, "name", ns)
+        name_text = name_el.text if name_el is not None else "?"
+
+        # 3.1: InputFieldExtInfo без обязательных свойств
+        if xsi_type == "form:FormField":
+            type_el = _find_edt_child(item, "type", ns)
+            if type_el is not None and type_el.text == "InputField":
+                ext_info = _find_edt_child(item, "extInfo", ns)
+                if ext_info is None:
+                    result.add_warning(
+                        "InputField '%s': отсутствует extInfo "
+                        "(обязан содержать chooseType, typeDomainEnabled, textEdit)"
+                        % name_text,
+                        element=name_text,
+                    )
+                else:
+                    missing = []
+                    for prop in sorted(_INPUT_FIELD_REQUIRED_PROPS):
+                        if _find_edt_child(ext_info, prop, ns) is None:
+                            missing.append(prop)
+                    if missing:
+                        result.add_warning(
+                            "InputField '%s': extInfo без %s"
+                            % (name_text, ", ".join(missing)),
+                            element=name_text,
+                        )
+
+            # 3.2: Колонка таблицы без обязательных свойств
+            if _is_inside_table_edt(item, xsi_type_attr):
+                missing = []
+                for prop in sorted(_TABLE_COLUMN_REQUIRED_PROPS):
+                    if _find_edt_child(item, prop, ns) is None:
+                        missing.append(prop)
+                if missing:
+                    result.add_warning(
+                        "Колонка '%s' в таблице без %s"
+                        % (name_text, ", ".join(missing)),
+                        element=name_text,
+                    )
+
+            # 3.4: Handler в неправильном месте
+            for handler in _findall_edt(item, "handlers", ns):
+                event_el = _find_edt_child(handler, "event", ns)
+                if event_el is not None and event_el.text in _EXTINFO_HANDLER_EVENTS:
+                    handler_name_el = _find_edt_child(handler, "name", ns)
+                    handler_name = handler_name_el.text if handler_name_el is not None else "?"
+                    result.add_warning(
+                        "Handler '%s' (%s) должен быть в extInfo, "
+                        "а не на уровне элемента '%s'"
+                        % (event_el.text, handler_name, name_text),
+                        element=name_text,
+                    )
+
+        # 3.3: Button без type вне CommandBar
+        if xsi_type == "form:Button":
+            type_el = _find_edt_child(item, "type", ns)
+            if type_el is None and not _is_inside_commandbar_edt(item, ns, xsi_type_attr):
+                result.add_warning(
+                    "Button '%s' вне CommandBar без <type> "
+                    "(ожидается UsualButton)" % name_text,
+                    element=name_text,
+                )
+
+    # 3.5: containedObjects — EDT добавляет их автоматически
+    for co in _iter_edt(root, "containedObjects", ns):
+        parent = co.getparent()
+        parent_name = "?"
+        if parent is not None:
+            pn = _find_edt_child(parent, "name", ns)
+            if pn is not None:
+                parent_name = pn.text or "?"
+        result.add_warning(
+            "containedObjects в '%s' — EDT обычно добавляет их автоматически"
+            % parent_name,
+            element=parent_name,
+        )
+
+
+def _is_inside_table_edt(item: etree._Element, xsi_type_attr: str) -> bool:
+    """Проверяет, находится ли элемент внутри Table."""
+    parent = item.getparent()
+    while parent is not None:
+        if parent.get(xsi_type_attr, "") == "form:Table":
+            return True
+        if _local_name(parent.tag) == "Form":
+            return False
+        parent = parent.getparent()
+    return False
+
+
+def _is_inside_commandbar_edt(
+    item: etree._Element, ns: str, xsi_type_attr: str
+) -> bool:
+    """Проверяет, находится ли элемент внутри CommandBar-группы."""
+    parent = item.getparent()
+    while parent is not None:
+        if parent.get(xsi_type_attr, "") == "form:FormGroup":
+            type_el = _find_edt_child(parent, "type", ns)
+            if type_el is not None and type_el.text == "CommandBar":
+                return True
+        if _local_name(parent.tag) == "Form":
+            return False
+        parent = parent.getparent()
+    return False
 
 
 def _find_edt_child(element: etree._Element, local_name: str, ns: str) -> etree._Element | None:

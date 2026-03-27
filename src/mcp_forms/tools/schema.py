@@ -25,6 +25,35 @@ def get_form_schema() -> dict:
         return json.load(f)
 
 
+_EDT_MANDATORY_CHECKLIST = """\
+**MANDATORY - НИКОГДА НЕ ПРОПУСКАТЬ:**
+
+1. Каждый InputField -> extInfo ОБЯЗАН содержать:
+   chooseType, typeDomainEnabled, textEdit (даже если true по умолчанию)
+
+2. Каждый FormField в таблице -> ОБЯЗАН содержать:
+   editMode (Enter), showInHeader (true),
+   headerHorizontalAlign (Left), showInFooter (true)
+
+3. Handlers InputField - РАЗМЕЩЕНИЕ:
+   - В <extInfo> (как <handlers>): StartChoice, Clearing, Opening,
+     ChoiceProcessing, AutoComplete, TextEditEnd
+   - На уровне элемента (<handlers>): OnChange, Drag*
+
+4. Button вне CommandBar -> type ОБЯЗАН быть UsualButton
+   Button в CommandBar -> type = CommandBarButton (дефолт, можно не указывать)
+
+5. Имя кнопки = имя команды (НЕ "Кнопка" + имя, НЕ имя + "Кнопка")
+
+6. НЕ добавлять containedObjects с classId вручную - EDT добавляет сам
+
+7. НЕ дублировать title, если он совпадает с именем реквизита - платформа подставит автоматически
+
+8. Предпочитать встроенную кнопку выбора (choiceButton + StartChoice)
+   вместо отдельной кнопки рядом с полем
+"""
+
+
 def get_form_prompt(format: str = "logform") -> str:
     """Получить промпт с базой знаний по тегам и атрибутам формы.
 
@@ -46,7 +75,12 @@ def get_form_prompt(format: str = "logform") -> str:
     if not prompt_path.exists():
         return "%s не найден в %s" % (prompt_path.name, prompt_path.parent)
 
-    return prompt_path.read_text(encoding="utf-8")
+    content = prompt_path.read_text(encoding="utf-8")
+
+    if format == "edt":
+        content = _EDT_MANDATORY_CHECKLIST + "\n" + content
+
+    return content
 
 
 def get_xcore_model_info() -> dict:

@@ -421,13 +421,15 @@ class FormGenerator:
         parent: etree._Element,
         spec: FormFieldSpec | FormGroupSpec | FormTableSpec | FormButtonSpec,
         ns_xsi: str,
+        *,
+        in_commandbar: bool = False,
     ) -> None:
         if isinstance(spec, FormGroupSpec):
-            self._add_edt_group(parent, spec, ns_xsi)
+            self._add_edt_group(parent, spec, ns_xsi, in_commandbar=in_commandbar)
         elif isinstance(spec, FormTableSpec):
             self._add_edt_table(parent, spec, ns_xsi)
         elif isinstance(spec, FormButtonSpec):
-            self._add_edt_button(parent, spec, ns_xsi)
+            self._add_edt_button(parent, spec, ns_xsi, in_commandbar=in_commandbar)
         else:
             self._add_edt_field(parent, spec, ns_xsi)
 
@@ -520,7 +522,8 @@ class FormGenerator:
             te.text = "true"
 
     def _add_edt_button(
-        self, parent: etree._Element, spec: FormButtonSpec, ns_xsi: str
+        self, parent: etree._Element, spec: FormButtonSpec, ns_xsi: str,
+        *, in_commandbar: bool = False,
     ) -> None:
         item = etree.SubElement(
             parent, "{%s}items" % NS_EDT,
@@ -561,6 +564,11 @@ class FormGenerator:
         cm_fill = etree.SubElement(cm, "{%s}autoFill" % NS_EDT)
         cm_fill.text = "true"
 
+        # type: UsualButton вне CommandBar, в CommandBar дефолт (не указываем)
+        if not in_commandbar:
+            type_el = etree.SubElement(item, "{%s}type" % NS_EDT)
+            type_el.text = "UsualButton"
+
         if spec.representation:
             rep = etree.SubElement(item, "{%s}representation" % NS_EDT)
             rep.text = spec.representation
@@ -569,7 +577,8 @@ class FormGenerator:
             db.text = "true"
 
     def _add_edt_group(
-        self, parent: etree._Element, spec: FormGroupSpec, ns_xsi: str
+        self, parent: etree._Element, spec: FormGroupSpec, ns_xsi: str,
+        *, in_commandbar: bool = False,
     ) -> None:
         item = etree.SubElement(
             parent, "{%s}items" % NS_EDT,
@@ -580,9 +589,10 @@ class FormGenerator:
         id_el = etree.SubElement(item, "{%s}id" % NS_EDT)
         id_el.text = str(self._alloc_id())
 
-        # Children
+        # Children — рекурсивно наследуем контекст CommandBar
+        child_in_commandbar = in_commandbar or spec.group_type == "CommandBar"
         for child in spec.children:
-            self._add_edt_element(item, child, ns_xsi)
+            self._add_edt_element(item, child, ns_xsi, in_commandbar=child_in_commandbar)
 
         # visible / enabled / userVisible
         _add_edt_visible(item)

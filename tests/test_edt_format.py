@@ -381,3 +381,233 @@ class TestEdtTemplates:
         xml = generate_form(spec)
         assert detect_format(xml) == "edt"
         assert "DataProcessorObject.МояОбработка" in xml
+
+
+# =================== Button type (UsualButton) ===================
+
+
+class TestEdtButtonType:
+    """Тесты генерации type для Button: UsualButton вне CommandBar."""
+
+    def test_button_outside_commandbar_has_usual_type(self) -> None:
+        """Кнопка на верхнем уровне -> type=UsualButton."""
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormButtonSpec(name="Выполнить", command_name="Выполнить"),
+            ],
+        )
+        xml = generate_form(spec)
+        assert "<form:type>UsualButton</form:type>" in xml
+
+    def test_button_in_commandbar_no_usual_type(self) -> None:
+        """Кнопка в CommandBar -> без UsualButton (дефолт CommandBarButton)."""
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormGroupSpec(
+                    name="КоманднаяПанель",
+                    group_type="CommandBar",
+                    children=[
+                        FormButtonSpec(name="Выполнить", command_name="Выполнить"),
+                    ],
+                ),
+            ],
+        )
+        xml = generate_form(spec)
+        assert "form:Button" in xml
+        assert "UsualButton" not in xml
+
+    def test_button_in_nested_group_inside_commandbar(self) -> None:
+        """Кнопка в подгруппе внутри CommandBar -> тоже без UsualButton."""
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormGroupSpec(
+                    name="КоманднаяПанель",
+                    group_type="CommandBar",
+                    children=[
+                        FormGroupSpec(
+                            name="Подгруппа",
+                            group_type="UsualGroup",
+                            children=[
+                                FormButtonSpec(name="Выполнить", command_name="Выполнить"),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        )
+        xml = generate_form(spec)
+        assert "form:Button" in xml
+        assert "UsualButton" not in xml
+
+    def test_button_in_usual_group_outside_commandbar(self) -> None:
+        """Кнопка в обычной группе (не CommandBar) -> type=UsualButton."""
+        spec = FormSpec(
+            format="edt",
+            elements=[
+                FormGroupSpec(
+                    name="Группа",
+                    group_type="UsualGroup",
+                    children=[
+                        FormButtonSpec(name="Выполнить", command_name="Выполнить"),
+                    ],
+                ),
+            ],
+        )
+        xml = generate_form(spec)
+        assert "<form:type>UsualButton</form:type>" in xml
+
+
+# =================== EDT Defaults Validation Warnings ===================
+
+
+class TestEdtDefaultsWarnings:
+    """Тесты warnings для пропущенных EDT-дефолтов."""
+
+    def test_inputfield_missing_extinfo_props(self) -> None:
+        """InputField без chooseType/typeDomainEnabled/textEdit -> warning."""
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<form:Form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:form="http://g5.1c.ru/v8/dt/form">
+  <items xsi:type="form:FormField">
+    <name>Поле</name>
+    <id>1</id>
+    <type>InputField</type>
+    <extInfo xsi:type="form:InputFieldExtInfo">
+      <autoMaxWidth>true</autoMaxWidth>
+    </extInfo>
+  </items>
+</form:Form>"""
+        doc = load_form(xml)
+        result = validate_form(doc)
+        warnings = [e for e in result.errors if e.severity == "warning"]
+        assert any("chooseType" in w.message and "Поле" in w.message for w in warnings)
+
+    def test_inputfield_with_all_props_no_warning(self) -> None:
+        """InputField со всеми свойствами -> без warning."""
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<form:Form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:form="http://g5.1c.ru/v8/dt/form">
+  <items xsi:type="form:FormField">
+    <name>Поле</name>
+    <id>1</id>
+    <type>InputField</type>
+    <extInfo xsi:type="form:InputFieldExtInfo">
+      <chooseType>true</chooseType>
+      <typeDomainEnabled>true</typeDomainEnabled>
+      <textEdit>true</textEdit>
+    </extInfo>
+  </items>
+</form:Form>"""
+        doc = load_form(xml)
+        result = validate_form(doc)
+        warnings = [e for e in result.errors if e.severity == "warning" and "extInfo без" in e.message]
+        assert len(warnings) == 0
+
+    def test_button_outside_commandbar_without_type(self) -> None:
+        """Button без type вне CommandBar -> warning."""
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<form:Form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:form="http://g5.1c.ru/v8/dt/form">
+  <items xsi:type="form:Button">
+    <name>Кнопка</name>
+    <id>1</id>
+  </items>
+</form:Form>"""
+        doc = load_form(xml)
+        result = validate_form(doc)
+        warnings = [e for e in result.errors if e.severity == "warning"]
+        assert any("Button" in w.message and "CommandBar" in w.message for w in warnings)
+
+    def test_button_in_commandbar_without_type_no_warning(self) -> None:
+        """Button без type в CommandBar -> без warning."""
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<form:Form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:form="http://g5.1c.ru/v8/dt/form">
+  <items xsi:type="form:FormGroup">
+    <name>Панель</name>
+    <id>1</id>
+    <type>CommandBar</type>
+    <items xsi:type="form:Button">
+      <name>Кнопка</name>
+      <id>2</id>
+    </items>
+  </items>
+</form:Form>"""
+        doc = load_form(xml)
+        result = validate_form(doc)
+        warnings = [e for e in result.errors if e.severity == "warning" and "CommandBar" in e.message]
+        assert len(warnings) == 0
+
+    def test_contained_objects_warning(self) -> None:
+        """containedObjects -> warning."""
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<form:Form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:form="http://g5.1c.ru/v8/dt/form">
+  <items xsi:type="form:FormField">
+    <name>Поле</name>
+    <id>1</id>
+    <containedObjects classId="some-uuid"/>
+  </items>
+</form:Form>"""
+        doc = load_form(xml)
+        result = validate_form(doc)
+        warnings = [e for e in result.errors if e.severity == "warning"]
+        assert any("containedObjects" in w.message for w in warnings)
+
+    def test_table_column_missing_props(self) -> None:
+        """Колонка таблицы без editMode/showInHeader/showInFooter -> warning."""
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<form:Form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:form="http://g5.1c.ru/v8/dt/form">
+  <items xsi:type="form:Table">
+    <name>Таблица</name>
+    <id>1</id>
+    <items xsi:type="form:FormField">
+      <name>Колонка</name>
+      <id>2</id>
+      <type>InputField</type>
+    </items>
+  </items>
+</form:Form>"""
+        doc = load_form(xml)
+        result = validate_form(doc)
+        warnings = [e for e in result.errors if e.severity == "warning"]
+        assert any("editMode" in w.message and "Колонка" in w.message for w in warnings)
+
+    def test_handler_in_wrong_place(self) -> None:
+        """StartChoice handler на уровне элемента вместо extInfo -> warning."""
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<form:Form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:form="http://g5.1c.ru/v8/dt/form">
+  <items xsi:type="form:FormField">
+    <name>Поле</name>
+    <id>1</id>
+    <type>InputField</type>
+    <handlers>
+      <event>StartChoice</event>
+      <name>ПолеНачалоВыбора</name>
+    </handlers>
+    <extInfo xsi:type="form:InputFieldExtInfo">
+      <chooseType>true</chooseType>
+      <typeDomainEnabled>true</typeDomainEnabled>
+      <textEdit>true</textEdit>
+    </extInfo>
+  </items>
+</form:Form>"""
+        doc = load_form(xml)
+        result = validate_form(doc)
+        warnings = [e for e in result.errors if e.severity == "warning"]
+        assert any("StartChoice" in w.message and "extInfo" in w.message for w in warnings)
+
+    def test_fixture_edt_catalog_warnings(self) -> None:
+        """Фикстура edt_catalog_element.form: Артикул без extInfo-свойств."""
+        fixture = FIXTURES / "edt_catalog_element.form"
+        xml = fixture.read_text(encoding="utf-8")
+        doc = load_form(xml)
+        result = validate_form(doc)
+        # Артикул имеет InputField extInfo без chooseType/typeDomainEnabled/textEdit
+        warnings = [e for e in result.errors if e.severity == "warning" and "extInfo без" in e.message]
+        assert len(warnings) > 0
