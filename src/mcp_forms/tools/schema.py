@@ -51,6 +51,16 @@ _EDT_MANDATORY_CHECKLIST = """\
 
 8. Предпочитать встроенную кнопку выбора (choiceButton + StartChoice)
    вместо отдельной кнопки рядом с полем
+
+9. ТИПЫ в EDT: String, Boolean, Number, Date (НЕ xs:string, xs:boolean).
+   ExternalDataProcessor. (НЕ ExternalDataProcessorObject.).
+   ValueTable (НЕ v8:ValueTable). Без namespace-префиксов xs:, v8:, cfg:
+
+10. Кнопки команд формы - в autoCommandBar формы (НЕ в отдельную UsualGroup).
+    EDT автоматически перенесет кнопки команд в командную панель
+
+11. НЕ добавлять <view>/<edit> к колонкам таблицы (items).
+    view/edit принадлежат только реквизитам формы (attributes)
 """
 
 

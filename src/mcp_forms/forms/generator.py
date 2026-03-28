@@ -31,6 +31,12 @@ _EDT_XS_TYPE_MAP: dict[str, str] = {
     "xs:float": "Number",
 }
 
+# Маппинг типов Конфигуратор → EDT (убираем "Object" для внешних обработок/отчетов)
+_EDT_OBJECT_TYPE_MAP: dict[str, str] = {
+    "ExternalDataProcessorObject.": "ExternalDataProcessor.",
+    "ExternalReportObject.": "ExternalReport.",
+}
+
 
 @dataclass
 class FormFieldSpec:
@@ -667,6 +673,29 @@ class FormGenerator:
             seg = etree.SubElement(dp, "{%s}segments" % NS_EDT)
             seg.text = spec.data_path
 
+        # Стандартные свойства таблицы (EDT-дефолты)
+        _table_defaults = {
+            "changeRowSet": "true",
+            "changeRowOrder": "true",
+            "selectionMode": "MultiRow",
+            "header": "true",
+            "headerHeight": "1",
+            "footer": "true",
+            "footerHeight": "1",
+            "horizontalScrollBar": "AutoUse",
+            "verticalScrollBar": "AutoUse",
+            "horizontalLines": "true",
+            "verticalLines": "true",
+            "autoInsertNewRow": "true",
+            "searchOnInput": "Auto",
+            "enableStartDrag": "true",
+            "enableDrag": "true",
+            "fileDragMode": "AsFileRef",
+        }
+        for prop_name, prop_val in _table_defaults.items():
+            el = etree.SubElement(item, "{%s}%s" % (NS_EDT, prop_name))
+            el.text = prop_val
+
         # autoCommandBar
         acb = etree.SubElement(item, "{%s}autoCommandBar" % NS_EDT)
         acb_name = etree.SubElement(acb, "{%s}name" % NS_EDT)
@@ -752,11 +781,14 @@ class FormGenerator:
         id_el.text = str(self._alloc_attr_id())
         vt = etree.SubElement(attr, "{%s}valueType" % NS_EDT)
         types_el = etree.SubElement(vt, "{%s}types" % NS_EDT)
-        # Strip cfg: prefix; convert xs: types to EDT types
+        # Strip namespace prefixes; convert types to EDT format
         type_name = spec.type_name
         if type_name.startswith("cfg:"):
             type_name = type_name[4:]
+        elif type_name.startswith("v8:"):
+            type_name = type_name[3:]
         type_name = _EDT_XS_TYPE_MAP.get(type_name, type_name)
+        type_name = _EDT_OBJECT_TYPE_MAP.get(type_name, type_name)
         types_el.text = type_name
 
         view = etree.SubElement(attr, "{%s}view" % NS_EDT)
